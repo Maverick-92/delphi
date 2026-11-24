@@ -1,44 +1,41 @@
-﻿# Delphi - A Webcam Light for Your Personal Data
+﻿# Delphi
 
-**wHACKiest 2026 | Track 3: Know Thyself**
+A webcam light for your personal data. Built for wHACKiest 2026 (Track 3: Know Thyself).
 
-Delphi is a local-first personal intelligence hub that learns your posture, screen habits, and room environment on your own machine—requiring a time-boxed **Permission Slip** before any AI sees your data, logging every outbound byte in a tamper-evident **Privacy Ledger**, and letting you cut off all AI access instantly via voice or a physical **ESP32 hardware kill switch**.
+## What it does
+Your laptop and sensors can tell when you slouch, stare at the screen too long, or sit in a stuffy room, but getting insights usually means uploading all your raw data to someone else's cloud.
 
-## Architecture (6-Stage Local Trust Zone)
-1. **Sensors:** Laptop screen/idle tracking + local MediaPipe Pose (frames processed in RAM, never saved) + ESP32 desk node (BME280 temperature/humidity, RGB status LED, physical kill switch).
-2. **Ingest Hub (`vault/app.py`):** Flask REST API verifying per-device HMAC-SHA256 signatures and monotonic sequence numbers to block rogue or replayed readings.
-3. **The Vault (`delphi_vault.db`):** Local SQLite database (WAL mode) with a SHA-256 hash-chained Privacy Ledger supporting right-to-forget (`/forget`) without breaking chain integrity.
-4. **On-Device Intelligence:** Rolling EWMA baselines, z-scores, and `scikit-learn` Isolation Forest anomaly detection running locally on device.
-5. **The Egress Gate:** Single outbound checkpoint enforcing scoped Permission Slips and data minimization (rounded aggregates only).
-6. **Outputs:** ElevenLabs zero-retention spoken nudges (generic templates cached locally), ESP32 desk LED (Green / Amber / Red), and grounded AI summaries.
+Delphi keeps everything on your laptop instead:
+- Tracks your habits locally (posture, screen time, room temperature/humidity).
+- Uses a permission slip before any AI can see your data (only rounded summaries, with a time limit).
+- Records everything that leaves your laptop in a logbook that detects tampering.
+- Connects to a small desk ESP32 light (Green = local only, Yellow = AI read a summary, Red = blocked) with a physical kill switch button to cut off all AI access instantly.
 
-## Quick Start
+## How it works
+1. **Sensors:** Laptop webcam checks posture in memory and drops the image immediately (only keeps a score). ESP32 reads room temp/humidity with a BME280 sensor and controls the LED + kill switch.
+2. **Backend (`vault/app.py`):** Local Flask server + SQLite database. Checks device signatures and message counters so fake readings get rejected.
+3. **Logbook:** Every entry links to the previous one using SHA-256 hashing. Editing an old entry breaks the chain and gets caught by `/verify`.
+4. **Insights:** Runs simple stats and a local Isolation Forest model on your laptop to spot posture drops or unusual spikes.
+5. **Exit Gate:** The only way data leaves your machine. Checks active permission slips, logs what went out, and handles voice nudges through ElevenLabs using generic sentences (no personal numbers sent).
 
+## Current Progress (Early MVP)
+- Built the core Flask backend (`vault/app.py`) with local SQLite storage.
+- Added device signature + replay check (`POST /ingest`).
+- Added the hash-chained privacy logbook, tamper check (`GET /verify`), and data deletion (`DELETE /forget`).
+- Added permission slips (`POST /slips`), gated AI queries (`POST /ai/ask`), and instant lock (`POST /revoke`, `GET /esp32/state`).
+- Added ElevenLabs voice nudges (`POST /nudge/speak`) with local audio caching.
+
+## Setup
     python -m venv .venv
     .\.venv\Scripts\Activate.ps1
     pip install -r requirements.txt
     copy .env.example .env
     python vault/app.py
 
-Open `http://127.0.0.1:5000` for the Live Dashboard and `http://127.0.0.1:5000/verify-ui` for the Standalone Browser-Side Receipt Verifier.
-
-## Implemented in Early MVP
-- `vault/app.py`: Tier-1 Flask Vault, SQLite WAL storage, per-device HMAC-SHA256 & replay sequence validation (`POST /ingest`)
-- Tamper-evident SHA-256 hash-chained Privacy Ledger with live integrity checking (`GET /verify`) and right-to-forget (`DELETE /forget`)
-- On-device EWMA, z-score, and Isolation Forest anomaly detection
-- Scoped AI Permission Slips (`POST /slips`, `POST /ai/ask`) and instant kill-switch revocation (`POST /revoke`, `GET /esp32/state`)
-- ElevenLabs zero-retention voice nudge endpoint (`POST /nudge/speak`) with local MP3 caching
-- `dashboard/index.html` & `dashboard/verify.html`: Live control dashboard + client-side WebCrypto receipt verifier
-
-## Roadmap & Future Scope
-### Phase 1 - Live Edge Sensors & Hardware (In Progress for Ideation / Hack Day)
-- **ESP32 Desk Unit (`esp32_node/`):** Wi-Fi microcontroller with BME280 (temperature & humidity), MPU6050 (desk motion), real-time Green/Amber/Red status LED synced to `/esp32/state`, and a hardware interrupt push-button kill switch triggering `POST /revoke` with offline ring-buffer recovery.
-- **Laptop Telemetry Collector (`collectors/laptop_agent.py`):** Native MediaPipe Pose posture scorer (frames discarded in RAM immediately) paired with `psutil` app-category/idle tracking and regex/entropy redaction.
-- **Phone Side-View Posture Node:** Optional smartphone camera view running on-device posture estimation over LAN for higher accuracy.
-- **Voice Command Override:** Hands-free voice commands ("Approve for 1 hour" / "Cut access") complementing the physical kill switch.
-
-### Phase 2 - Hardened Isolation, Wearables & Ecosystem Scaling
-- **Docker Air-Gapped Vault (`internal: true`):** Network-isolated vault container with zero direct internet routing, forcing all outbound traffic physically through a separate Egress Gate container.
-- **Wearable & Health Exports:** Local ingestion of smartwatch/fitness exports (Samsung Health, Apple Health, BLE heart-rate broadcast) unified inside the same vault.
-- **AWS Cloud Trust Add-Ons:** Periodic AWS S3 anchoring of 32-byte ledger chain-head hashes (external tamper proof with zero personal data uploaded) and optional AWS Bedrock weekly digest synthesis behind Permission Slips.
-- **Universal AI Consent Layer (MCP):** Exposing Delphi's permission-slip and audit gate as a standard Model Context Protocol (MCP) server so any external AI assistant (health, calendar, finance, enterprise workflows) must pass Delphi before reading personal context.
+## Working on Next (Ideation Pitch & Hack Day)
+- **Web Dashboard:** Live view of sensor readings, permission toggles, privacy logbook, and a standalone verify page.
+- **Laptop Collector:** Python script using MediaPipe Pose for live posture scores and `psutil` for screen/app time.
+- **ESP32 Desk Node:** Wiring the BME280 sensor, RGB status LED, and physical kill switch button over Wi-Fi.
+- **Phone Camera (Optional):** Second camera angle for better posture detection.
+- **Voice Controls:** Quick voice commands to approve or cut AI access.
+- **Future Additions:** Smartwatch/health app exports, running the vault inside an isolated Docker network, AWS S3 backup for logbook hashes, and connecting external AI assistants via MCP.
