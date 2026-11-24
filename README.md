@@ -57,13 +57,6 @@ External AI --> THE GATE <--> Desk Light & Button (ESP32)
 
 ---
 
-## Bonus Tracks
-
-* **Best Use of ElevenLabs:** Calm spoken nudges and hardware lock alerts using locally saved generic voice clips, with zero private data sent to the cloud.
-* **Best Use of AWS (Planned Add-on):** Optional backup of logbook check codes to Amazon S3 for outside proof.
-
----
-
 ## Files in This Repo (Right Now)
 
 | File | What It Does |
