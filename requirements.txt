@@ -1,0 +1,10 @@
+flask
+flask-cors
+python-dotenv
+requests
+psutil
+numpy
+scikit-learn
+opencv-python
+mediapipe
+elevenlabs
