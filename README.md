@@ -12,7 +12,7 @@ Delphi is a local-first personal intelligence hub that learns your posture, scre
 5. **The Egress Gate:** Single outbound checkpoint enforcing scoped Permission Slips and allow-listed aggregate rules.
 6. **Outputs:** ElevenLabs zero-retention spoken nudges (generic templates only, cached locally), ESP32 desk LED (Green / Amber / Red), and grounded AI summaries.
 
-## Quick Start (Early MVP)
+## Quick Start
 
     python -m venv .venv
     .\.venv\Scripts\Activate.ps1
