@@ -1,0 +1,266 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delphi - Webcam Light for Your Personal Data</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; background: #0b0f19; color: #e2e8f0; padding: 20px; }
+    .container { max-width: 1180px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .brand h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+    .brand p { margin: 4px 0 0; color: #94a3b8; font-size: 13px; }
+    .led-box { display: flex; align-items: center; gap: 12px; background: #111827; border: 1px solid #1f2937; padding: 10px 16px; border-radius: 10px; }
+    .led { width: 18px; height: 18px; border-radius: 50%; transition: all 0.25s; }
+    .led.GREEN { background: #22c55e; box-shadow: 0 0 14px #22c55e; }
+    .led.AMBER { background: #f59e0b; box-shadow: 0 0 16px #f59e0b; }
+    .led.RED { background: #ef4444; box-shadow: 0 0 18px #ef4444; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
+    .card h2 { margin: 0 0 12px; font-size: 15px; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.6px; }
+    .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .metric-tile { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; }
+    .metric-name { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+    .metric-val { font-size: 24px; font-weight: 700; margin: 4px 0; }
+    .metric-sub { font-size: 11px; color: #64748b; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    button { border: none; border-radius: 8px; padding: 9px 14px; font-weight: 600; cursor: pointer; font-size: 13px; }
+    .btn-red { background: #dc2626; color: white; }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-blue { background: #2563eb; color: white; }
+    .btn-amber { background: #d97706; color: white; }
+    .btn-gray { background: #334155; color: #e2e8f0; }
+    input[type="text"] { width: 100%; background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; }
+    .box-out { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; font-size: 13px; margin-top: 10px; white-space: pre-wrap; min-height: 54px; }
+    .checks { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #1e293b; vertical-align: top; }
+    th { color: #94a3b8; font-weight: 600; }
+    .tag { padding: 2px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .tag-ok { background: #14532d; color: #86efac; }
+    .tag-warn { background: #78350f; color: #fde68a; }
+    .tag-bad { background: #7f1d1d; color: #fca5a5; }
+    .mono { font-family: ui-monospace, Consolas, monospace; font-size: 11px; color: #cbd5e1; word-break: break-all; }
+    a { color: #60a5fa; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="brand">
+      <h1>DELPHI</h1>
+      <p>Local-First Personal Intelligence Vault &amp; Egress Gate &bull; <a href="/verify-ui" target="_blank">Open Standalone Verifier &rarr;</a></p>
+    </div>
+    <div class="led-box">
+      <div id="led" class="led GREEN"></div>
+      <div>
+        <div style="font-size:13px;font-weight:700" id="ledLabel">LOCAL SAFE (GREEN)</div>
+        <div style="font-size:11px;color:#94a3b8" id="statsLine">Readings: 0 | Outbound: 0 bytes</div>
+      </div>
+      <button class="btn-red" onclick="triggerRevoke()">KILL SWITCH</button>
+      <button class="btn-green" onclick="triggerUnlock()">UNLOCK</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1. Live Sensors &amp; On-Device Insights</h2>
+      <div id="metricsGrid" class="metrics">
+        <div class="metric-tile"><div class="metric-name">Waiting for collectors</div><div class="metric-val">--</div><div class="metric-sub">Start laptop_agent.py or ESP32</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-amber" onclick="speakNudge('posture')">Test Posture Voice Nudge</button>
+        <button class="btn-gray" onclick="speakNudge('stuffy')">Test Room Air Nudge</button>
+        <button class="btn-gray" onclick="forgetPosture()">Forget Posture Data (/forget)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Scoped AI Permission Slip</h2>
+      <div style="font-size:12px;color:#94a3b8">Toggle which metrics the AI is allowed to see (rounded aggregates only):</div>
+      <div class="checks">
+        <label><input type="checkbox" class="scope" value="posture_score" checked /> posture_score</label>
+        <label><input type="checkbox" class="scope" value="focus_score" checked /> focus_score</label>
+        <label><input type="checkbox" class="scope" value="humidity_pct" checked /> humidity_pct</label>
+        <label><input type="checkbox" class="scope" value="temp_c" checked /> temp_c</label>
+      </div>
+      <button class="btn-gray" onclick="saveSlip()">Update Permission Slip (60 min)</button>
+      <hr style="border:0;border-top:1px solid #1e293b;margin:12px 0;" />
+      <input type="text" id="aiQuestion" value="How is my posture and room environment today?" />
+      <button class="btn-blue" onclick="askAI()">Ask Scoped AI (Through The Gate)</button>
+      <div id="aiResponse" class="box-out">Ask a question to watch the Egress Gate log exact outbound bytes and blink AMBER.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+      <h2 style="margin:0;">3. Tamper-Evident Privacy Ledger (SHA-256 Hash Chain)</h2>
+      <div class="btn-row" style="margin:0;">
+        <button class="btn-green" onclick="verifyChain()">Verify Integrity</button>
+        <button class="btn-amber" onclick="simulateTamper()">Simulate DB Tamper</button>
+        <button class="btn-blue" onclick="exportReceipt()">Export Receipt JSON</button>
+        <button class="btn-gray" onclick="resetDemo()">Reset Demo</button>
+      </div>
+    </div>
+    <div id="verifyBanner" class="box-out" style="margin-bottom:12px;min-height:auto;">Integrity status: Click "Verify Integrity" to validate every hash link.</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Time</th><th>Event</th><th>Actor &rarr; Dest</th><th>Rule</th><th>Bytes</th><th>Outbound / Digest</th><th>Chain Hash</th></tr>
+        </thead>
+        <tbody id="ledgerBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+async function refresh() {
+  try {
+    const res = await fetch('/status');
+    const data = await res.json();
+
+    const led = document.getElementById('led');
+    led.className = 'led ' + data.led_state;
+    const labelMap = {
+      GREEN: 'LOCAL SAFE (GREEN)',
+      AMBER: 'APPROVED EGRESS (AMBER)',
+      RED: data.kill_switch ? 'VAULT LOCKED - KILL SWITCH (RED)' : 'ACCESS BLOCKED (RED)'
+    };
+    document.getElementById('ledLabel').textContent = labelMap[data.led_state] || data.led_state;
+    document.getElementById('statsLine').textContent = `Readings: ${data.total_readings} | Outbound: ${data.total_bytes_out} bytes`;
+
+    const grid = document.getElementById('metricsGrid');
+    if (data.insights && data.insights.length > 0) {
+      grid.innerHTML = data.insights.map(ins => `
+        <div class="metric-tile">
+          <div class="metric-name">${esc(ins.metric)} ${ins.anomaly ? '<span class="tag tag-bad">ANOMALY</span>' : ''}</div>
+          <div class="metric-val">${ins.latest}</div>
+          <div class="metric-sub">Avg: ${ins.mean} | EWMA: ${ins.ewma} | n=${ins.sample_count} (${ins.confidence})</div>
+        </div>
+      `).join('');
+    } else {
+      grid.innerHTML = '<div class="metric-tile"><div class="metric-name">No live telemetry yet</div><div class="metric-val">--</div><div class="metric-sub">Run collectors/laptop_agent.py or ESP32</div></div>';
+    }
+
+    const tbody = document.getElementById('ledgerBody');
+    tbody.innerHTML = (data.ledger || []).map(row => {
+      let cls = 'tag-ok';
+      if (row.event_type.includes('BLOCKED') || row.event_type.includes('REJECTED') || row.event_type.includes('KILL')) cls = 'tag-bad';
+      else if (row.event_type.includes('EGRESS') || row.event_type.includes('FORGET')) cls = 'tag-warn';
+      const t = new Date(row.ts * 1000).toLocaleTimeString();
+      return `<tr>
+        <td>#${row.idx}</td>
+        <td>${t}</td>
+        <td><span class="tag ${cls}">${esc(row.event_type)}</span></td>
+        <td>${esc(row.actor)} &rarr; ${esc(row.destination)}</td>
+        <td>${esc(row.rule_matched)}</td>
+        <td>${row.bytes_out}B</td>
+        <td class="mono">${esc(row.outbound_json)}</td>
+        <td class="mono">${esc(row.chain_hash.slice(0, 14))}...</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {}
+}
+
+async function saveSlip() {
+  const checked = Array.from(document.querySelectorAll('.scope:checked')).map(c => c.value);
+  await fetch('/slips', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ slip_id: 'slip-demo', allowed_metrics: checked, duration_minutes: 60 })
+  });
+  document.getElementById('aiResponse').textContent = 'Permission Slip updated: ' + JSON.stringify(checked);
+  refresh();
+}
+
+async function askAI() {
+  const q = document.getElementById('aiQuestion').value;
+  const res = await fetch('/ai/ask', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ question: q, slip_id: 'slip-demo' })
+  });
+  const data = await res.json();
+  const box = document.getElementById('aiResponse');
+  if (data.allowed) {
+    box.textContent = `AI Answer: ${data.answer}\n\nExact Outbound Payload Logged (Entry #${data.ledger_entry_idx}):\n${JSON.stringify(data.outbound_payload)}`;
+  } else {
+    box.textContent = `BLOCKED (403): ${data.error}`;
+  }
+  refresh();
+}
+
+async function speakNudge(type) {
+  const res = await fetch('/nudge/speak', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ type })
+  });
+  const data = await res.json();
+  if (data.audio_url) {
+    new Audio(data.audio_url).play();
+  } else if ('speechSynthesis' in window && data.text) {
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(data.text));
+  }
+  refresh();
+}
+
+async function triggerRevoke() {
+  await fetch('/revoke', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ actor: 'dashboard_kill_switch' }) });
+  refresh();
+}
+
+async function triggerUnlock() {
+  await fetch('/unlock', { method: 'POST' });
+  refresh();
+}
+
+async function forgetPosture() {
+  const res = await fetch('/forget?metric=posture_score', { method: 'DELETE' });
+  const d = await res.json();
+  document.getElementById('verifyBanner').textContent = `Right-to-Forget executed: wiped ${d.rows_wiped} raw posture rows. Click Verify Integrity to prove chain is still intact!`;
+  refresh();
+}
+
+async function verifyChain() {
+  const res = await fetch('/verify');
+  const d = await res.json();
+  const b = document.getElementById('verifyBanner');
+  b.style.borderColor = d.valid ? '#22c55e' : '#ef4444';
+  b.textContent = (d.valid ? 'VALID: ' : 'ALERT: ') + d.message;
+}
+
+async function simulateTamper() {
+  const res = await fetch('/admin/simulate_tamper', { method: 'POST' });
+  const d = await res.json();
+  document.getElementById('verifyBanner').textContent = d.error ? d.error : `Simulated stealth edit on SQLite ledger row #${d.target_idx}. Now click Verify Integrity!`;
+  refresh();
+}
+
+async function exportReceipt() {
+  const res = await fetch('/export/ledger');
+  const data = await res.json();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'delphi_receipt.json';
+  a.click();
+}
+
+async function resetDemo() {
+  await fetch('/admin/reset_demo', { method: 'POST' });
+  document.getElementById('verifyBanner').textContent = 'Demo reset clean.';
+  refresh();
+}
+
+refresh();
+setInterval(refresh, 1500);
+</script>
+</body>
+</html>
